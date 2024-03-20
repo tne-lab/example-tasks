@@ -61,7 +61,7 @@ class BarPress(Task):
         if isinstance(event, PybEvents.TimeoutEvent) and event.name == "task_complete":
             self.complete = True
             return True
-        elif isinstance(event, PybEvents.GUIEvent) and event.event == "GUI_PELLET":
+        elif isinstance(event, PybEvents.GUIEvent) and event.name == "GUI_PELLET":
             self.food.toggle(self.dispense_time)
             return True
         return False
