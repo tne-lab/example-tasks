@@ -22,18 +22,22 @@ class BarPressGUI(GUI):
         self.pellets = InfoBoxElement(self, 129, 125, 50, 15, "PELLETS", 'BOTTOM', ['0'])
         self.time_in_task = InfoBoxElement(self, 372, 170, 50, 15, "TIME", 'BOTTOM', ['0'])
         self.vic = InfoBoxElement(self, 64, 170, 50, 15, "VI COUNT", 'BOTTOM', ['0'])
+        self.n_press = 0
 
         return [self.lever, self.feed_button, self.presses, self.pellets, self.time_in_task, self.vic]
 
     def handle_event(self, event: PybEvents.PybEvent) -> None:
         super(BarPressGUI, self).handle_event(event)
         self.time_in_task.set_text(str(round(self.time_elapsed / 60, 2)))
-        if isinstance(event, PybEvents.ComponentUpdateEvent) and event.comp_id == self.food.id and event.value:
+        if isinstance(event, PybEvents.StartEvent):
+            self.food.count = 0
+            self.n_press = 0
+        elif isinstance(event, PybEvents.ComponentUpdateEvent) and event.comp_id == self.food.id and event.value:
             self.food.count += 1
             self.pellets.set_text(str(self.food.count))
         elif isinstance(event, PybEvents.ComponentUpdateEvent) and event.comp_id == self.food_lever.id and event.value:
-            self.presses += 1
-            self.presses.set_text(str(self.presses))
+            self.n_press += 1
+            self.presses.set_text(str(self.n_press))
         elif isinstance(event, PybEvents.StateEnterEvent) and event.name == "REWARD_UNAVAILABLE":
             self.lockout = event.metadata['lockout']
 
