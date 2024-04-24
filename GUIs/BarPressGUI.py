@@ -32,6 +32,8 @@ class BarPressGUI(GUI):
         if isinstance(event, PybEvents.StartEvent):
             self.food.count = 0
             self.n_press = 0
+            self.pellets.set_text(str(self.food.count))
+            self.presses.set_text(str(self.n_press))
         elif isinstance(event, PybEvents.ComponentUpdateEvent) and event.comp_id == self.food.id and event.value:
             self.food.count += 1
             self.pellets.set_text(str(self.food.count))
