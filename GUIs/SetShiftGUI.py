@@ -36,7 +36,7 @@ class SetShiftGUI(GUI):
                 self.rule]
 
     def handle_event(self, event: PybEvents.PybEvent) -> None:
-        super(SetShiftGUI, self).handle_event(event)
+        super().handle_event(event)
         self.time_in_trial.set_text(str(round(self.time_elapsed / 60, 2)))
         if isinstance(event, PybEvents.StartEvent):
             self.food.count = 0

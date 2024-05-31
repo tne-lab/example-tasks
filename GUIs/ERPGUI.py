@@ -8,23 +8,26 @@ from pybehave.GUIs import Colors
 from pybehave.GUIs.GUI import GUI
 
 from pybehave.Elements.InfoBoxElement import InfoBoxElement
+from pybehave.Events import PybEvents
 
 
 class ERPGUI(GUI):
 
-    def __init__(self, task_gui, task):
-        super().__init__(task_gui, task)
+    def initialize(self):
         self.info_boxes = []
 
-        def pulses_remaining(self):
-            if task.started:
-                return [str(task.npulse - task.pulse_count)]
-            else:
-                return [str(0)]
-
-        ne = InfoBoxElement(self, 372, 125, 50, 15, "PULSES REMAINING", 'BOTTOM', ['0'])
-        ne.get_text = MethodType(pulses_remaining, ne)
+        self.pulse_count = 0
+        ne = InfoBoxElement(self, 372, 125, 50, 15, "PULSES REMAINING", 'BOTTOM', [str(self.npulse)])
         self.info_boxes.append(ne)
 
-    def get_elements(self) -> List[Element]:
         return [*self.info_boxes]
+
+    def handle_event(self, event: PybEvents.PybEvent) -> None:
+        super().handle_event(event)
+        if isinstance(event, PybEvents.StartEvent):
+            self.pulse_count = 0
+            self.info_boxes[0].set_text([str(self.npulse - self.pulse_count)])
+        elif isinstance(event, PybEvents.TimeoutEvent) and event.name == "pulse_sep":
+            self.pulse_count += 1
+            self.info_boxes[0].set_text([str(self.npulse - self.pulse_count)])
+            

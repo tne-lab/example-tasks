@@ -27,7 +27,7 @@ class BarPressGUI(GUI):
         return [self.lever, self.feed_button, self.presses, self.pellets, self.time_in_task, self.vic]
 
     def handle_event(self, event: PybEvents.PybEvent) -> None:
-        super(BarPressGUI, self).handle_event(event)
+        super().handle_event(event)
         self.time_in_task.set_text(str(round(self.time_elapsed / 60, 2)))
         if isinstance(event, PybEvents.StartEvent):
             self.food.count = 0

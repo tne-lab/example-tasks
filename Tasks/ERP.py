@@ -4,8 +4,8 @@ import numpy as np
 from pybehave.Tasks.Task import Task
 from pybehave.Components.Stimmer import Stimmer
 
-from pybehave.Events.OEEvent import OEEvent
-from pybehave.Events.InputEvent import InputEvent
+from pybehave.Events.OENetworkLogger import OEEvent
+from pybehave.Events import PybEvents
 
 
 class ERP(Task):
@@ -15,17 +15,14 @@ class ERP(Task):
         ERP = 1
         STOP_RECORD = 2
 
-    class Inputs(Enum):
-        ERP_STIM = 0
-
     @staticmethod
     def get_components():
         return {
             'stim': [Stimmer]
         }
 
-    # noinspection PyMethodMayBeStatic
-    def get_constants(self):
+    @staticmethod
+    def get_constants():
         return {
             'ephys': False,
             'record_lockout': 4,
@@ -37,13 +34,10 @@ class ERP(Task):
             'pws': [90, 90]
         }
 
-    # noinspection PyMethodMayBeStatic
-    def get_variables(self):
+    @staticmethod
+    def get_variables():
         return {
-            "last_pulse_time": 0,
-            "pulse_count": 0,
-            "stim_last": False,
-            "complete": False
+            "pulse_count": 0
         }
 
     def init_state(self):
@@ -52,22 +46,29 @@ class ERP(Task):
     def start(self):
         self.stim.parametrize(0, 1, self.stim_dur, self.period, np.array(self.amps), self.pws)
         if self.ephys:
-            self.events.append(OEEvent(self, "startRecording", {"pre": "ClosedLoop"}))
+            self.log_event(OEEvent("startRecording"))
 
-    def START_RECORD(self):
-        if self.time_in_state() > self.record_lockout:
+    def START_RECORD(self, event: PybEvents.PybEvent):
+        if isinstance(event, PybEvents.StateEnterEvent):
+            self.set_timeout("record_lockout", self.record_lockout)
+        elif isinstance(event, PybEvents.TimeoutEvent) and event.name == "record_lockout":
             self.change_state(self.States.ERP)
 
-    def ERP(self):
-        if self.cur_time - self.last_pulse_time > self.pulse_sep and self.pulse_count == self.npulse:
-            self.change_state(self.States.STOP_RECORD)
-            if self.ephys:
-                self.events.append(OEEvent(self, "stopRecording"))
-        elif self.cur_time - self.last_pulse_time > self.pulse_sep:
-            self.last_pulse_time = self.cur_time
+    def ERP(self, event: PybEvents.PybEvent):
+        if isinstance(event, PybEvents.StateEnterEvent):
+            self.set_timeout("pulse_sep", self.pulse_sep)
+        elif isinstance(event, PybEvents.TimeoutEvent) and event.name == "pulse_sep":
             self.stim.start(0)
             self.pulse_count += 1
-            self.events.append(InputEvent(self, self.Inputs.ERP_STIM))
+            if self.pulse_count == self.npulse:
+                self.change_state(self.States.STOP_RECORD)
+                if self.ephys:
+                    self.log_event(OEEvent("stopRecording"))
+            else:
+                self.set_timeout("pulse_sep", self.pulse_sep)
 
-    def is_complete(self):
-        return self.state == self.States.STOP_RECORD and self.time_in_state() > self.record_lockout
+    def STOP_RECORD(self, event: PybEvents.PybEvent):
+        if isinstance(event, PybEvents.StateEnterEvent):
+            self.set_timeout("record_lockout", self.record_lockout)
+        elif isinstance(event, PybEvents.TimeoutEvent) and event.name == "record_lockout":
+            self.complete = True
